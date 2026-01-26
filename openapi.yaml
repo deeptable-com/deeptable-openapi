@@ -1,0 +1,1960 @@
+openapi: 3.1.0
+info:
+  title: DeepTable API
+  description: The DeepTable REST API. Please see https://docs.deeptable.com for more details.
+  termsOfService: https://www.deeptable.com/terms
+  contact:
+    email: support@deeptable.com
+    name: DeepTable Support
+  license:
+    name: MIT
+    url: https://github.com/deeptable-com/deeptable-openapi/blob/master/LICENSE
+  version: 0.1.0
+servers:
+- url: https://api.deeptable.com
+security:
+- ApiKeyAuth: []
+tags:
+- description: Upload and manage spreadsheet files. Files must be Excel (.xlsx) format.
+  name: Files
+- description: Convert uploaded spreadsheets into structured data. Creates relational tables from messy spreadsheet data.
+  name: Structured Sheets
+paths:
+  /v1/files:
+    get:
+      description: List all files uploaded by the current user.
+      operationId: list_files
+      parameters:
+      - description: Maximum number of files to return.
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          description: Maximum number of files to return.
+          examples:
+          - 20
+          format: int32
+          maximum: 100
+          minimum: 1
+          title: Limit
+          type: integer
+      - description: A cursor for pagination. Use the `last_id` from a previous response to fetch the next page.
+        in: query
+        name: after
+        required: false
+        schema:
+          anyOf:
+          - description: Unique identifier for a file.
+            pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+            title: File ID
+            type: string
+          - type: 'null'
+          description: A cursor for pagination. Use the `last_id` from a previous response to fetch the next page.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          title: After
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileListResponse'
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: List files
+      tags:
+      - Files
+    post:
+      description: 'Upload an Excel spreadsheet file for later processing.
+
+
+        Supported formats:
+
+        - Excel (.xlsx)
+
+
+        Maximum file size: 100 MB'
+      operationId: create_file
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateFileRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unsupported-file-type
+                title: Unprocessable Content
+                status: 422
+                detail: 'Unsupported file type ''text/plain''. Supported types: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet (.xlsx)'
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Upload a file
+      tags:
+      - Files
+  /v1/files/{file_id}:
+    delete:
+      description: Delete a file. This cannot be undone.
+      operationId: delete_file
+      parameters:
+      - description: The unique identifier of the file.
+        in: path
+        name: file_id
+        required: true
+        schema:
+          description: The unique identifier of the file.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+          title: File ID
+          type: string
+      responses:
+        '204':
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/file-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Delete a file
+      tags:
+      - Files
+    get:
+      description: Get metadata for a specific file.
+      operationId: retrieve_file
+      parameters:
+      - description: The unique identifier of the file.
+        in: path
+        name: file_id
+        required: true
+        schema:
+          description: The unique identifier of the file.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+          title: File ID
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/file-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Get file metadata
+      tags:
+      - Files
+  /v1/files/{file_id}/content:
+    get:
+      description: Download the original uploaded file content.
+      operationId: download_file
+      parameters:
+      - description: The unique identifier of the file.
+        in: path
+        name: file_id
+        required: true
+        schema:
+          description: The unique identifier of the file.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+          title: File ID
+          type: string
+      responses:
+        '200':
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                format: binary
+                type: string
+          description: The original file content
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/file-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Download file
+      tags:
+      - Files
+  /v1/structured-sheets:
+    get:
+      description: List all structured sheets conversions for the authenticated user. Results are paginated using cursor-based pagination.
+      operationId: list_structured_sheets
+      parameters:
+      - description: Maximum number of results to return per page.
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          description: Maximum number of results to return per page.
+          examples:
+          - 20
+          format: int32
+          maximum: 100
+          minimum: 1
+          title: Limit
+          type: integer
+      - description: A cursor for pagination. Use the `last_id` from a previous response to fetch the next page of results.
+        in: query
+        name: after
+        required: false
+        schema:
+          anyOf:
+          - description: Unique identifier for a structured sheets conversion.
+            pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+            title: Structured Sheets ID
+            type: string
+          - type: 'null'
+          description: A cursor for pagination. Use the `last_id` from a previous response to fetch the next page of results.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          title: After
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructuredSheetsListResponse'
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: List structured sheets
+      tags:
+      - Structured Sheets
+    post:
+      description: Start converting a spreadsheet workbook into structured data. This initiates an asynchronous conversion process. Poll the returned resource using the `id` to check completion status.
+      operationId: create_structured_sheets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StructuredSheetsCreateRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructuredSheetsResponse'
+          description: Conversion job accepted and started
+          headers:
+            Location:
+              description: URL to poll for conversion status
+              schema:
+                type: string
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/file-not-found
+                title: Not Found
+                status: 404
+                detail: The specified file was not found.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Create structured sheets
+      tags:
+      - Structured Sheets
+  /v1/structured-sheets/{structured_sheets_id}:
+    delete:
+      description: Delete a structured sheets conversion and its associated exports. This action cannot be undone.
+      operationId: delete_structured_sheets
+      parameters:
+      - description: The unique identifier of the structured sheets conversion.
+        in: path
+        name: structured_sheets_id
+        required: true
+        schema:
+          description: The unique identifier of the structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+      responses:
+        '204':
+          description: Successfully deleted
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/structured-sheets-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Delete structured sheets
+      tags:
+      - Structured Sheets
+    get:
+      description: Get the status and details of a structured sheets conversion.
+      operationId: retrieve_structured_sheets
+      parameters:
+      - description: The unique identifier of the structured sheets conversion.
+        in: path
+        name: structured_sheets_id
+        required: true
+        schema:
+          description: The unique identifier of the structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructuredSheetsResponse'
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/structured-sheets-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Retrieve structured sheets
+      tags:
+      - Structured Sheets
+  /v1/structured-sheets/{structured_sheets_id}/cancel:
+    post:
+      description: Cancel a structured sheets conversion that is in progress. Only jobs with status 'queued' or 'in_progress' can be cancelled.
+      operationId: cancel_structured_sheets
+      parameters:
+      - description: The unique identifier of the structured sheets conversion.
+        in: path
+        name: structured_sheets_id
+        required: true
+        schema:
+          description: The unique identifier of the structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructuredSheetsResponse'
+          description: Successfully cancelled
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/structured-sheets-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/cannot-cancel
+                title: Conflict
+                status: 409
+                detail: Cannot cancel structured sheets with this status. Only 'queued' or 'in_progress' jobs can be cancelled.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Cancel structured sheets processing
+      tags:
+      - Structured Sheets
+  /v1/structured-sheets/{structured_sheets_id}/download:
+    get:
+      description: 'Download the structured data in the specified format. Only available when conversion status is ''completed''.
+
+
+        Available formats:
+
+        - `sqlite`: SQLite database containing all extracted tables
+
+        - `cell_labels`: CSV file with cell-level semantic labels'
+      operationId: download_structured_sheets
+      parameters:
+      - description: The unique identifier of the structured sheets conversion.
+        in: path
+        name: structured_sheets_id
+        required: true
+        schema:
+          description: The unique identifier of the structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+      - description: The export format to download.
+        in: query
+        name: format
+        required: false
+        schema:
+          $ref: '#/components/schemas/StructuredSheetsDownloadFormat'
+          default: sqlite
+          description: The export format to download.
+          examples:
+          - sqlite
+      responses:
+        '200':
+          content:
+            application/x-sqlite3:
+              schema:
+                format: binary
+                type: string
+            text/csv:
+              schema:
+                format: binary
+                type: string
+          description: Export file in the requested format
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/structured-sheets-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/export-not-available
+                title: Conflict
+                status: 409
+                detail: Export is not available. Conversion may not be completed or failed.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Download structured sheets export
+      tags:
+      - Structured Sheets
+  /v1/structured-sheets/{structured_sheets_id}/tables:
+    get:
+      description: List all tables extracted from the structured sheet. Only available when conversion status is 'completed'.
+      operationId: list_structured_sheets_tables
+      parameters:
+      - description: The unique identifier of the structured sheets conversion.
+        in: path
+        name: structured_sheets_id
+        required: true
+        schema:
+          description: The unique identifier of the structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableListResponse'
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/structured-sheets-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/export-not-available
+                title: Conflict
+                status: 409
+                detail: Tables are not available. Conversion may not be completed or failed.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: List tables in structured sheet
+      tags:
+      - Structured Sheets
+  /v1/structured-sheets/{structured_sheets_id}/tables/{table_id}:
+    get:
+      description: Get details of a specific table extracted from the structured sheet. Only available when conversion status is 'completed'.
+      operationId: retrieve_table
+      parameters:
+      - description: The unique identifier of the structured sheets conversion.
+        in: path
+        name: structured_sheets_id
+        required: true
+        schema:
+          description: The unique identifier of the structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+      - description: The unique identifier of the table.
+        in: path
+        name: table_id
+        required: true
+        schema:
+          description: The unique identifier of the table.
+          examples:
+          - tbl_01kfxgjd94fn9stqm45rqr2pnz
+          pattern: ^tbl_[0-9a-hjkmnp-tv-z]{26}$
+          title: Table ID
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableResponse'
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/table-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Retrieve a table
+      tags:
+      - Structured Sheets
+  /v1/structured-sheets/{structured_sheets_id}/tables/{table_id}/download:
+    get:
+      description: 'Download the table data in the specified format.
+
+
+        Available formats:
+
+        - `parquet`: Apache Parquet columnar format (recommended for data analysis)
+
+        - `csv`: Comma-separated values (compatible with any spreadsheet application)'
+      operationId: download_table
+      parameters:
+      - description: The unique identifier of the structured sheets conversion.
+        in: path
+        name: structured_sheets_id
+        required: true
+        schema:
+          description: The unique identifier of the structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+      - description: The unique identifier of the table.
+        in: path
+        name: table_id
+        required: true
+        schema:
+          description: The unique identifier of the table.
+          examples:
+          - tbl_01kfxgjd94fn9stqm45rqr2pnz
+          pattern: ^tbl_[0-9a-hjkmnp-tv-z]{26}$
+          title: Table ID
+          type: string
+      - description: The format to download the table data in.
+        in: query
+        name: format
+        required: false
+        schema:
+          $ref: '#/components/schemas/TableDownloadFormat'
+          default: parquet
+          description: The format to download the table data in.
+          examples:
+          - parquet
+      responses:
+        '200':
+          content:
+            application/vnd.apache.parquet:
+              schema:
+                format: binary
+                type: string
+            text/csv:
+              schema:
+                format: binary
+                type: string
+          description: Table data in the requested format
+        '401':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/invalid-jwt
+                title: Unauthorized
+                status: 401
+                detail: Invalid or expired authentication token.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/insufficient-permissions
+                title: Forbidden
+                status: 403
+                detail: You do not have permission to access this resource.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/table-not-found
+                title: Not Found
+                status: 404
+                detail: Additional error context.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/export-not-available
+                title: Conflict
+                status: 409
+                detail: Table data is not available. The structured sheet may not have completed processing.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+        '422':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/unprocessable-content
+                title: Unprocessable Content
+                status: 422
+                errors:
+                - loc:
+                  - body
+                  - field_name
+                  msg: Field required
+                  type: missing
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unprocessable Content
+        '429':
+          content:
+            application/problem+json:
+              example:
+                type: https://docs.deeptable.com/errors/rate-limit-exceeded
+                title: Too Many Requests
+                status: 429
+                detail: Rate limit exceeded. Please retry after the time specified in the Retry-After header.
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too Many Requests
+      summary: Download table data
+      tags:
+      - Structured Sheets
+components:
+  schemas:
+    FileListResponse:
+      additionalProperties: false
+      description: 'Paginated response for listing files.
+
+
+        Uses cursor-based pagination for efficient iteration through results.'
+      example:
+        data:
+        - content_type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+          created_at: '2024-01-15T10:30:00Z'
+          file_name: financial_report.xlsx
+          id: file_01kfxgjd94fn9stqm414vjb0s8
+          object: file
+          size: 1048576
+        first_id: file_01kfxgjd94fn9stqm414vjb0s8
+        has_more: false
+        last_id: file_01kfxgjd94fn9stqm414vjb0s8
+        object: list
+      properties:
+        object:
+          const: list
+          default: list
+          description: The object type, which is always 'list'.
+          title: Object
+          type: string
+        data:
+          description: List of files.
+          items:
+            $ref: '#/components/schemas/FileResponse'
+          maxItems: 100
+          title: Data
+          type: array
+        first_id:
+          anyOf:
+          - description: Unique identifier for a file.
+            pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+            title: File ID
+            type: string
+          - type: 'null'
+          description: The ID of the first file in the list.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          title: First Id
+        last_id:
+          anyOf:
+          - description: Unique identifier for a file.
+            pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+            title: File ID
+            type: string
+          - type: 'null'
+          description: The ID of the last file in the list. Use this as the `after` parameter to fetch the next page.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          title: Last Id
+        has_more:
+          description: Whether there are more results available after this page.
+          examples:
+          - false
+          title: Has More
+          type: boolean
+      required:
+      - data
+      - has_more
+      title: FileListResponse
+      type: object
+    FileResponse:
+      additionalProperties: false
+      description: 'Response representing an uploaded file.
+
+
+        This is returned from POST (upload), GET (retrieve), and list endpoints.'
+      example:
+        content_type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        created_at: '2024-01-15T10:30:00Z'
+        file_name: financial_report.xlsx
+        id: file_01kfxgjd94fn9stqm414vjb0s8
+        object: file
+        size: 1048576
+      properties:
+        id:
+          description: The unique identifier for this file.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+          title: File ID
+          type: string
+        object:
+          const: file
+          default: file
+          description: The object type, which is always 'file'.
+          title: Object
+          type: string
+        file_name:
+          description: The original filename of the uploaded file.
+          examples:
+          - financial_report.xlsx
+          maxLength: 255
+          title: File Name
+          type: string
+        content_type:
+          description: The MIME type of the file.
+          examples:
+          - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+          maxLength: 255
+          title: Content Type
+          type: string
+        size:
+          description: The size of the file in bytes.
+          examples:
+          - 1048576
+          minimum: 0.0
+          title: Size
+          type: integer
+        created_at:
+          description: The timestamp when the file was uploaded.
+          examples:
+          - '2024-01-15T10:30:00Z'
+          format: date-time
+          title: Created At
+          type: string
+      required:
+      - id
+      - file_name
+      - content_type
+      - size
+      - created_at
+      title: FileResponse
+      type: object
+    Problem:
+      description: 'RFC 9457 Problem Details for HTTP APIs.
+
+
+        Extension members may be present for specific error types.'
+      properties:
+        type:
+          description: A URI reference that identifies the problem type.
+          title: Problem type
+          type: string
+        title:
+          description: A short, human-readable summary of the problem type.
+          title: Problem title
+          type: string
+        status:
+          description: The HTTP status code.
+          title: Status code
+          type: integer
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: A human-readable explanation specific to this occurrence of the problem.
+          title: Problem detail
+        errors:
+          description: Validation errors. Present only for 422 responses.
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          maxItems: 100
+          type: array
+      required:
+      - type
+      - title
+      - status
+      title: Problem
+      type: object
+    ProcessingError:
+      additionalProperties: false
+      description: Error information when processing fails.
+      properties:
+        code:
+          description: A machine-readable error code.
+          examples:
+          - invalid_file_format
+          - processing_timeout
+          - internal_error
+          maxLength: 64
+          title: Code
+          type: string
+        message:
+          description: A human-readable description of the error.
+          examples:
+          - The uploaded file is not a valid Excel spreadsheet.
+          maxLength: 1024
+          title: Message
+          type: string
+      required:
+      - code
+      - message
+      title: ProcessingError
+      type: object
+    ProcessingStatus:
+      description: 'Status of processing for structured sheets.
+
+
+        - queued: Job is queued and waiting to be processed
+
+        - in_progress: Job is currently being processed
+
+        - completed: Processing finished successfully
+
+        - failed: Processing encountered an error
+
+        - cancelled: Processing was cancelled by the user'
+      enum:
+      - queued
+      - in_progress
+      - completed
+      - failed
+      - cancelled
+      title: ProcessingStatus
+      type: string
+    StructuredSheetsCreateRequest:
+      additionalProperties: false
+      description: Request body for creating structured sheets from a file.
+      example:
+        file_id: file_01h45ytscbebyvny4gc8cr8ma2
+        sheet_names:
+        - Sheet1
+        - Financials
+      properties:
+        file_id:
+          description: The unique identifier of the file to convert.
+          examples:
+          - file_01h45ytscbebyvny4gc8cr8ma2
+          pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+          title: File ID
+          type: string
+        sheet_names:
+          anyOf:
+          - items:
+              maxLength: 100
+              type: string
+            maxItems: 100
+            type: array
+          - type: 'null'
+          description: List of sheet names to convert. If None, all sheets will be converted.
+          examples:
+          - - Sheet1
+            - Financials
+          title: Sheet Names
+      required:
+      - file_id
+      title: StructuredSheetsCreateRequest
+      type: object
+    StructuredSheetsDownloadFormat:
+      description: 'Available download formats for structured sheets.
+
+
+        - sqlite: SQLite database with all tables
+
+        - cell_labels: JSONL with semantic labels for each cell'
+      enum:
+      - sqlite
+      - cell_labels
+      title: StructuredSheetsDownloadFormat
+      type: string
+    StructuredSheetsListResponse:
+      additionalProperties: false
+      description: 'Paginated response for listing structured sheets conversions.
+
+
+        Uses cursor-based pagination for efficient iteration through results.'
+      example:
+        data:
+        - created_at: '2024-01-15T10:30:00Z'
+          file_id: file_01kfxgjd94fn9stqm414vjb0s8
+          id: ss_01kfxgjd94fn9stqm42nejb627
+          object: structured_sheet
+          sheet_names:
+          - Sheet1
+          - Financials
+          status: completed
+          table_count: 6
+          updated_at: '2024-01-15T10:35:00Z'
+        first_id: ss_01kfxgjd94fn9stqm42nejb627
+        has_more: false
+        last_id: ss_01kfxgjd94fn9stqm42nejb627
+        object: list
+      properties:
+        object:
+          const: list
+          default: list
+          description: The object type, which is always 'list'.
+          title: Object
+          type: string
+        data:
+          description: List of structured sheets conversions.
+          items:
+            $ref: '#/components/schemas/StructuredSheetsResponse'
+          maxItems: 100
+          title: Data
+          type: array
+        first_id:
+          anyOf:
+          - description: Unique identifier for a structured sheets conversion.
+            pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+            title: Structured Sheets ID
+            type: string
+          - type: 'null'
+          description: The ID of the first item in the list.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          title: First Id
+        last_id:
+          anyOf:
+          - description: Unique identifier for a structured sheets conversion.
+            pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+            title: Structured Sheets ID
+            type: string
+          - type: 'null'
+          description: The ID of the last item in the list. Use this as the `after` parameter to fetch the next page.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          title: Last Id
+        has_more:
+          description: Whether there are more results available after this page.
+          examples:
+          - false
+          title: Has More
+          type: boolean
+      required:
+      - data
+      - has_more
+      title: StructuredSheetsListResponse
+      type: object
+    StructuredSheetsResponse:
+      additionalProperties: false
+      description: 'Response representing a structured sheets conversion job.
+
+
+        This is returned from POST (create), GET (retrieve), and list endpoints.'
+      example:
+        created_at: '2024-01-15T10:30:00Z'
+        file_id: file_01kfxgjd94fn9stqm414vjb0s8
+        id: ss_01kfxgjd94fn9stqm42nejb627
+        object: structured_sheet
+        sheet_names:
+        - Sheet1
+        - Financials
+        status: completed
+        table_count: 6
+        updated_at: '2024-01-15T10:35:00Z'
+      properties:
+        id:
+          description: The unique identifier for this structured sheets conversion.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+        object:
+          const: structured_sheet
+          default: structured_sheet
+          description: The object type, which is always 'structured_sheet'.
+          title: Object
+          type: string
+        file_id:
+          description: The unique identifier for the source file.
+          examples:
+          - file_01kfxgjd94fn9stqm414vjb0s8
+          pattern: ^file_[0-9a-hjkmnp-tv-z]{26}$
+          title: File ID
+          type: string
+        status:
+          $ref: '#/components/schemas/ProcessingStatus'
+          description: The current processing status.
+          examples:
+          - completed
+        last_error:
+          anyOf:
+          - $ref: '#/components/schemas/ProcessingError'
+          - type: 'null'
+          description: Error information if processing failed. Only present when status is 'failed'.
+        table_count:
+          anyOf:
+          - minimum: 0.0
+            type: integer
+          - type: 'null'
+          description: Number of tables extracted from the workbook. Only present when status is 'completed'.
+          examples:
+          - 6
+          title: Table Count
+        created_at:
+          description: The timestamp when the conversion was started.
+          examples:
+          - '2024-01-15T10:30:00Z'
+          format: date-time
+          title: Created At
+          type: string
+        updated_at:
+          description: The timestamp when the conversion was last updated.
+          examples:
+          - '2024-01-15T10:35:00Z'
+          format: date-time
+          title: Updated At
+          type: string
+        sheet_names:
+          description: List of sheet names included in this conversion.
+          examples:
+          - - Sheet1
+            - Financials
+          items:
+            maxLength: 100
+            type: string
+          maxItems: 100
+          title: Sheet Names
+          type: array
+      required:
+      - id
+      - file_id
+      - status
+      - created_at
+      - updated_at
+      title: StructuredSheetsResponse
+      type: object
+    TableDownloadFormat:
+      description: 'Available download formats for individual tables.
+
+
+        - parquet: Single table as Parquet file
+
+        - csv: Single table as CSV file'
+      enum:
+      - parquet
+      - csv
+      title: TableDownloadFormat
+      type: string
+    TableListResponse:
+      additionalProperties: false
+      description: 'Paginated response for listing tables from a structured sheet.
+
+
+        Uses cursor-based pagination for efficient iteration through results.'
+      example:
+        data:
+        - created_at: '2026-01-15T10:35:00Z'
+          id: tbl_01kfxgjd94fn9stqm45rqr2pnz
+          name: head_count
+          object: table
+          sheet_name: Staffing
+          sheet_name_normalized: staffing
+          structured_sheet_id: ss_01kfxgjd94fn9stqm42nejb627
+          type: relational
+        - created_at: '2026-01-15T10:35:00Z'
+          id: tbl_02abc2def3ghjkmnpqrs4uvwxz
+          name: head_count__aggregations
+          object: table
+          sheet_name: Staffing
+          sheet_name_normalized: staffing
+          structured_sheet_id: ss_01kfxgjd94fn9stqm42nejb627
+          type: aggregation
+        first_id: tbl_01kfxgjd94fn9stqm45rqr2pnz
+        has_more: false
+        last_id: tbl_02abc2def3ghjkmnpqrs4uvwxz
+        object: list
+      properties:
+        object:
+          const: list
+          default: list
+          description: The object type, which is always 'list'.
+          title: Object
+          type: string
+        data:
+          description: List of tables.
+          items:
+            $ref: '#/components/schemas/TableResponse'
+          maxItems: 100
+          title: Data
+          type: array
+        first_id:
+          anyOf:
+          - description: Unique identifier for a table.
+            pattern: ^tbl_[0-9a-hjkmnp-tv-z]{26}$
+            title: Table ID
+            type: string
+          - type: 'null'
+          description: The ID of the first table in the list.
+          examples:
+          - tbl_01kfxgjd94fn9stqm45rqr2pnz
+          title: First Id
+        last_id:
+          anyOf:
+          - description: Unique identifier for a table.
+            pattern: ^tbl_[0-9a-hjkmnp-tv-z]{26}$
+            title: Table ID
+            type: string
+          - type: 'null'
+          description: The ID of the last table in the list. Use this as the `after` parameter to fetch the next page.
+          examples:
+          - tbl_01kfxgjd94fn9stqm45rqr2pnz
+          title: Last Id
+        has_more:
+          description: Whether there are more results available after this page.
+          examples:
+          - false
+          title: Has More
+          type: boolean
+      required:
+      - data
+      - has_more
+      title: TableListResponse
+      type: object
+    TableResponse:
+      additionalProperties: false
+      description: 'Response representing a table extracted from a structured sheet.
+
+
+        This is returned from GET (retrieve) and list table endpoints.
+
+        Table names use SQL naming conventions (e.g., monthly_head_count).'
+      example:
+        created_at: '2026-01-15T10:35:00Z'
+        id: tbl_01kfxgjd94fn9stqm45rqr2pnz
+        name: head_count
+        object: table
+        sheet_name: Staffing
+        sheet_name_normalized: staffing
+        structured_sheet_id: ss_01kfxgjd94fn9stqm42nejb627
+        type: relational
+      properties:
+        id:
+          description: The unique identifier for this table.
+          examples:
+          - tbl_01kfxgjd94fn9stqm45rqr2pnz
+          pattern: ^tbl_[0-9a-hjkmnp-tv-z]{26}$
+          title: Table ID
+          type: string
+        object:
+          const: table
+          default: table
+          description: The object type, which is always 'table'.
+          title: Object
+          type: string
+        structured_sheet_id:
+          description: The ID of the structured sheet this table belongs to.
+          examples:
+          - ss_01kfxgjd94fn9stqm42nejb627
+          pattern: ^ss_[0-9a-hjkmnp-tv-z]{26}$
+          title: Structured Sheets ID
+          type: string
+        name:
+          description: The name of the table using SQL naming conventions.
+          examples:
+          - head_count
+          maxLength: 255
+          title: Name
+          type: string
+        type:
+          $ref: '#/components/schemas/TableType'
+          description: The type of table (relational, aggregation, or tableless).
+          examples:
+          - relational
+        sheet_name:
+          description: The original Excel sheet name this table came from.
+          examples:
+          - Staffing
+          maxLength: 100
+          title: Sheet Name
+          type: string
+        sheet_name_normalized:
+          description: Normalized sheet name for use in SQLite table names and export filenames (lowercase, snake_case).
+          examples:
+          - staffing
+          maxLength: 100
+          title: Sheet Name Normalized
+          type: string
+        created_at:
+          description: The timestamp when this table was created.
+          examples:
+          - '2026-01-15T10:35:00Z'
+          format: date-time
+          title: Created At
+          type: string
+      required:
+      - id
+      - structured_sheet_id
+      - name
+      - type
+      - sheet_name
+      - sheet_name_normalized
+      - created_at
+      title: TableResponse
+      type: object
+    TableType:
+      description: 'Type of table extracted from a structured sheet.
+
+
+        - relational: Core data table with dimensional indices
+
+        - aggregation: Precomputed aggregations from Excel (sums, averages, etc.)
+
+        - tableless: Cells not belonging to any table (README cells, metadata)'
+      enum:
+      - relational
+      - aggregation
+      - tableless
+      title: TableType
+      type: string
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          maxItems: 100
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+    CreateFileRequest:
+      properties:
+        file:
+          description: The spreadsheet file to upload
+          format: binary
+          title: File
+          type: string
+      required:
+      - file
+      title: CreateFileRequest
+      type: object
+  securitySchemes:
+    ApiKeyAuth:
+      scheme: bearer
+      type: http
