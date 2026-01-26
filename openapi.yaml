@@ -1229,10 +1229,9 @@ paths:
       - description: The format to download the table data in.
         in: query
         name: format
-        required: false
+        required: true
         schema:
           $ref: '#/components/schemas/TableDownloadFormat'
-          default: parquet
           description: The format to download the table data in.
           examples:
           - parquet
